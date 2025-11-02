@@ -1,12 +1,17 @@
-#include "tic_tac_toe.h"
+#include "games/tic_tac_toe/tic_tac_toe_ai.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <limits>
+#include <random>
+#include <string>
+#include <algorithm>
+#include <cctype>
 
 namespace TicTacToe {
 
-game::game() : move_count_(0) {
+game::game() : move_count_(0), player_x_control_(player_control::k_human), 
+                player_o_control_(player_control::k_human) {
     reset();
 }
 
@@ -17,6 +22,23 @@ void game::reset() {
         }
     }
     move_count_ = 0;
+}
+
+void game::set_player_control(player _player, player_control _control) {
+    if (_player == player::k_x) {
+        player_x_control_ = _control;
+    } else if (_player == player::k_o) {
+        player_o_control_ = _control;
+    }
+}
+
+player_control game::get_player_control(player _player) const {
+    if (_player == player::k_x) {
+        return player_x_control_;
+    } else if (_player == player::k_o) {
+        return player_o_control_;
+    }
+    return player_control::k_human;
 }
 
 bool game::make_move(size_t _row, size_t _col, player _player) {
@@ -152,46 +174,136 @@ void game::print_board() const {
 }
 
 bool game::get_user_input(size_t& _row, size_t& _col) {
-    std::cout << "请输入行和列 (0-2)，用空格分隔: ";
+    std::cout << "请输入行和列 (0-2)，用空格分隔，或输入 'quit' 退出: ";
     
-    if (!(std::cin >> _row >> _col)) {
+    std::string input;
+    if (!(std::cin >> input)) {
+        // 输入流错误，可能用户输入了 Ctrl+D 或类似操作
+        return false;
+    }
+    
+    // 检查是否是退出命令（支持多种格式）
+    std::string input_lower = input;
+    std::transform(input_lower.begin(), input_lower.end(), input_lower.begin(), ::tolower);
+    
+    if (input_lower == "quit" || input_lower == "q" || input_lower == "exit") {
+        return false;  // 返回 false 表示用户想要退出
+    }
+    
+    // 尝试将输入解析为数字
+    try {
+        _row = std::stoul(input);
+        if (!(std::cin >> _col)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            return false;
+        }
+        return true;
+    } catch (const std::exception&) {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         return false;
     }
-    
-    return true;
 }
 
 void game::run() {
     std::cout << "========================================\n";
     std::cout << "        井字棋游戏 (Tic-Tac-Toe)       \n";
     std::cout << "========================================\n";
-    std::cout << "玩家 X 先手，玩家 O 后手\n";
+    
+    // 询问游戏模式
+    std::cout << "请选择游戏模式：\n";
+    std::cout << "1. 人机对战\n";
+    std::cout << "2. 人人对战 (玩家 X vs 玩家 O)\n";
+    std::cout << "请输入选项 (1 或 2): ";
+    
+    int mode;
+    if (!(std::cin >> mode) || (mode != 1 && mode != 2)) {
+        mode = 2;  // 默认人人对战
+        std::cout << "使用默认模式：人人对战\n";
+    }
+    
+    // 设置玩家控制类型
+    if (mode == 1) {
+        // 人机对战：随机决定先后手
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, 1);
+        bool human_first = dis(gen) == 0;
+        
+        if (human_first) {
+            set_player_control(player::k_x, player_control::k_human);
+            set_player_control(player::k_o, player_control::k_computer);
+            std::cout << "\n游戏模式：人机对战\n";
+            std::cout << "🎲 随机结果：你先手！\n";
+            std::cout << "你是玩家 X（先手），电脑是玩家 O（后手）\n";
+        } else {
+            set_player_control(player::k_x, player_control::k_computer);
+            set_player_control(player::k_o, player_control::k_human);
+            std::cout << "\n游戏模式：人机对战\n";
+            std::cout << "🎲 随机结果：电脑先手！\n";
+            std::cout << "电脑是玩家 X（先手），你是玩家 O（后手）\n";
+        }
+    } else {
+        set_player_control(player::k_x, player_control::k_human);
+        set_player_control(player::k_o, player_control::k_human);
+        std::cout << "\n游戏模式：人人对战\n";
+    }
+    
     std::cout << "输入行和列（0-2）来下棋\n";
-    std::cout << "输入 'q' 退出游戏\n\n";
+    std::cout << "输入 'quit' 可以随时退出游戏\n\n";
     
     reset();
     
     while (!is_game_over()) {
         player current = get_current_player();
+        player_control control = get_player_control(current);
+        
         print_board();
-        std::cout << "\n当前玩家: " << player_to_char(current) << "\n";
+        std::cout << "\n当前玩家: " << player_to_char(current);
+        if (control == player_control::k_computer) {
+            std::cout << " (电脑)";
+        } else {
+            std::cout << " (人类)";
+        }
+        std::cout << "\n";
         
         size_t row, col;
-        if (!get_user_input(row, col)) {
-            std::cout << "输入无效！请输入数字 0-2。\n\n";
-            continue;
+        bool move_valid = false;
+        
+        if (control == player_control::k_computer) {
+            // 电脑玩家自动下棋
+            std::cout << "电脑正在思考...\n";
+            if (get_computer_move(current, row, col)) {
+                move_valid = true;
+                std::cout << "电脑选择了位置: (" << row << ", " << col << ")\n";
+            }
+        } else {
+            // 人类玩家输入
+            if (get_user_input(row, col)) {
+                if (row >= BOARD_SIZE || col >= BOARD_SIZE) {
+                    std::cout << "位置超出范围！请输入 0-2。\n\n";
+                    continue;
+                }
+                move_valid = true;
+            } else {
+                // 检查是否用户想要退出（通过检查 cin 状态或重新读取）
+                // 由于 get_user_input 返回 false 可能是退出或输入无效
+                // 我们需要更明确地检测退出命令
+                std::cout << "\n游戏已退出！\n";
+                return;  // 直接退出游戏循环
+            }
         }
         
-        if (row >= BOARD_SIZE || col >= BOARD_SIZE) {
-            std::cout << "位置超出范围！请输入 0-2。\n\n";
-            continue;
-        }
-        
-        if (!make_move(row, col, current)) {
-            std::cout << "该位置已被占用！请选择其他位置。\n\n";
-            continue;
+        if (move_valid) {
+            if (!make_move(row, col, current)) {
+                if (control == player_control::k_human) {
+                    std::cout << "该位置已被占用！请选择其他位置。\n\n";
+                } else {
+                    std::cout << "错误：电脑选择了已被占用的位置。\n\n";
+                }
+                continue;
+            }
         }
         
         std::cout << "\n";
@@ -216,6 +328,11 @@ void game::run() {
     }
     
     std::cout << "\n游戏结束！\n";
+}
+
+bool game::get_computer_move(player _player, size_t& _row, size_t& _col) {
+    // 使用 AI 类进行决策
+    return tic_tac_toe_ai::get_move(board_, _player, _row, _col);
 }
 
 // C 接口实现

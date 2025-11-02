@@ -5,6 +5,11 @@
 #include <cstddef>
 #include <string>
 
+// 前向声明
+namespace TicTacToe {
+    class tic_tac_toe_ai;
+}
+
 namespace TicTacToe {
 
 // 棋盘大小
@@ -23,6 +28,12 @@ enum class game_state {
     k_x_win,
     k_o_win,
     k_draw
+};
+
+// 玩家控制类型
+enum class player_control {
+    k_human,
+    k_computer
 };
 
 // 游戏类
@@ -45,6 +56,12 @@ public:
     // 获取当前玩家（根据回合数）
     player get_current_player() const;
     
+    // 设置玩家控制类型
+    void set_player_control(player _player, player_control _control);
+    
+    // 获取玩家控制类型
+    player_control get_player_control(player _player) const;
+    
     // 检查是否游戏结束
     bool is_game_over() const;
     
@@ -57,6 +74,8 @@ public:
 private:
     player board_[BOARD_SIZE][BOARD_SIZE];
     size_t move_count_;
+    player_control player_x_control_;
+    player_control player_o_control_;
     
     // 检查是否有玩家获胜
     game_state check_winner() const;
@@ -72,7 +91,11 @@ private:
     void print_board() const;
     
     // 获取用户输入
+    // 返回值：true 表示有效输入，false 表示退出游戏
     bool get_user_input(size_t& _row, size_t& _col);
+    
+    // AI决策：计算电脑玩家的下一步棋
+    bool get_computer_move(player _player, size_t& _row, size_t& _col);
 };
 
 // C 接口函数

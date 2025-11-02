@@ -1,13 +1,19 @@
 #include <iostream>
-#include "tic_tac_toe.h"
+#include "game_manager.h"
+#include "game_registry.h"
 
 int main(int argc, char* argv[])
 {
-    using namespace TicTacToe;
+    using namespace Games;
     
-    // 创建井字棋游戏并运行
-    game tic_tac_toe_game;
-    tic_tac_toe_game.run();
+    // 创建游戏管理器
+    game_manager manager;
+    
+    // 注册所有游戏
+    register_all_games(manager);
+    
+    // 运行游戏管理器主菜单
+    manager.run();
     
     return 0;
 }
