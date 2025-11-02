@@ -247,3 +247,23 @@
 - 删除了 GitHub 设置相关的临时文件
 - 保留了 requirements.md 并更新了需求记录
 
+---
+
+## 需求 #27: 推送代码到 GitHub
+**时间**: 部署阶段  
+**描述**: 在远端 github 创建仓库并推送  
+**实现**: 
+- 添加远程仓库：`git@github.com:KeyFicller/ConsoleChessCard.git`
+- 推送 main 分支到远程仓库
+- 成功推送所有代码和提交历史
+
+---
+
+## 需求 #28: 记录体验并建立推送规范
+**时间**: 工作流程优化  
+**描述**: 记录一下，目前为止体验不错。记录并推送，以后每次让你推送的时候记得更新 requirements.md  
+**实现**: 
+- 更新 requirements.md 记录体验反馈
+- 建立规范：以后每次推送时都要更新 requirements.md
+- 提交并推送代码
+
