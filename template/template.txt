@@ -1,0 +1,129 @@
+# CMake 函数模板
+# 用于创建动态库和可执行文件的模板函数
+
+# ============================================
+# 函数：创建动态库
+# ============================================
+# 用法：
+#   add_shared_library_template(
+#       TARGET_NAME target_name
+#       SOURCES file1.cpp file2.cpp ...
+#       HEADERS file1.h file2.h ...
+#       [INCLUDE_DIR include_dir]
+#       [LIBS lib1 lib2 ...]
+#   )
+#
+function(add_shared_library_template)
+    cmake_parse_arguments(
+        SHARED_LIB
+        ""
+        "TARGET_NAME;INCLUDE_DIR"
+        "SOURCES;HEADERS;LIBS"
+        ${ARGN}
+    )
+    
+    # 检查必需参数
+    if(NOT SHARED_LIB_TARGET_NAME)
+        message(FATAL_ERROR "add_shared_library_template: TARGET_NAME is required")
+    endif()
+    
+    if(NOT SHARED_LIB_SOURCES)
+        message(FATAL_ERROR "add_shared_library_template: SOURCES is required")
+    endif()
+    
+    # 创建动态库
+    add_library(${SHARED_LIB_TARGET_NAME} SHARED ${SHARED_LIB_SOURCES} ${SHARED_LIB_HEADERS})
+    
+    # 设置包含目录
+    if(SHARED_LIB_INCLUDE_DIR)
+        target_include_directories(${SHARED_LIB_TARGET_NAME}
+            PUBLIC ${SHARED_LIB_INCLUDE_DIR}
+        )
+    endif()
+    
+    # 链接库
+    if(SHARED_LIB_LIBS)
+        target_link_libraries(${SHARED_LIB_TARGET_NAME}
+            PRIVATE ${SHARED_LIB_LIBS}
+        )
+    endif()
+    
+    # 设置输出目录
+    set_target_properties(${SHARED_LIB_TARGET_NAME} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    )
+endfunction()
+
+# ============================================
+# 函数：创建可执行文件
+# ============================================
+# 用法：
+#   add_executable_template(
+#       TARGET_NAME target_name
+#       SOURCES file1.cpp file2.cpp ...
+#       [INCLUDE_DIR include_dir]
+#       [LIBS lib1 lib2 ...]
+#   )
+#
+function(add_executable_template)
+    cmake_parse_arguments(
+        EXEC
+        ""
+        "TARGET_NAME;INCLUDE_DIR"
+        "SOURCES;LIBS"
+        ${ARGN}
+    )
+    
+    # 检查必需参数
+    if(NOT EXEC_TARGET_NAME)
+        message(FATAL_ERROR "add_executable_template: TARGET_NAME is required")
+    endif()
+    
+    if(NOT EXEC_SOURCES)
+        message(FATAL_ERROR "add_executable_template: SOURCES is required")
+    endif()
+    
+    # 创建可执行文件
+    add_executable(${EXEC_TARGET_NAME} ${EXEC_SOURCES})
+    
+    # 设置包含目录
+    if(EXEC_INCLUDE_DIR)
+        target_include_directories(${EXEC_TARGET_NAME}
+            PRIVATE ${EXEC_INCLUDE_DIR}
+        )
+    endif()
+    
+    # 链接库
+    if(EXEC_LIBS)
+        target_link_libraries(${EXEC_TARGET_NAME}
+            PRIVATE ${EXEC_LIBS}
+        )
+    endif()
+    
+    # 设置输出目录
+    set_target_properties(${EXEC_TARGET_NAME} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+endfunction()
+
+# ============================================
+# 使用示例
+# ============================================
+
+# 示例 1：创建动态库
+# add_shared_library_template(
+#     TARGET_NAME my_library
+#     SOURCES src/lib.cpp src/lib_utils.cpp
+#     HEADERS include/lib.h include/lib_utils.h
+#     INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include
+#     LIBS pthread
+# )
+
+# 示例 2：创建可执行文件
+# add_executable_template(
+#     TARGET_NAME my_app
+#     SOURCES src/main.cpp src/app.cpp
+#     INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include
+#     LIBS my_library pthread
+# )
+
